@@ -34,11 +34,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     owner
   )
 
+  const args = [Registrar.address, PriceOracle.address, 60, 86400]
+
   const controller = await deploy("MEMERegistrarController", {
     from: deployer.address,
-    args: [Registrar.address, PriceOracle.address, 60, 86400],
+    args,
     log: true,
   })
+
+  console.log(
+    ` |> hh verify --contract contracts/memeregistrar/MEMERegistrarController.sol:MEMERegistrarController --network ${
+      network.name
+    } ${controller.address} ${args.join(" ")}`
+  )
+
   if (!controller.newlyDeployed) return
 
   if (owner !== deployer) {

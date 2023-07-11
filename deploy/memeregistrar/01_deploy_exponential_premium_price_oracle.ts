@@ -12,24 +12,44 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     bscTestnet: "",
   }
 
-  let oracleAddress = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
-  if (network.name !== "mainnet") {
-    const dummyOracle = await deploy("DummyOracle", {
+  let oracleAddress: any = priceFeed[network.name]
+  let args = ["23319000000"]
+  if (network.name !== "bscMainnet") {
+    await deploy("DummyOracle", {
       from: deployer.address,
-      args: ["23319000000"],
+      args,
       log: true,
     })
-    oracleAddress = dummyOracle.address
+
+    const DummyOracle = await deployments.get("DummyOracle")
+
+    console.log(
+      ` |> hh verify --contract contracts/memeregistrar/DummyOracle.sol:DummyOracle --network ${
+        network.name
+      } ${DummyOracle.address} ${args.join(" ")}`
+    )
+
+    oracleAddress = DummyOracle.address
   }
+
+  args = [
+    oracleAddress,
+    [0, 0, "20294266869609", "5073566717402", "158548959919"],
+  ]
 
   await deploy("StablePriceOracle", {
     from: deployer.address,
-    args: [
-      oracleAddress,
-      [0, 0, "20294266869609", "5073566717402", "158548959919"],
-    ],
+    args,
     log: true,
   })
+
+  const StablePriceOracle = await deployments.get("StablePriceOracle")
+
+  console.log(
+    ` |> hh verify --contract contracts/memeregistrar/StablePriceOracle.sol:StablePriceOracle --network ${
+      network.name
+    } ${StablePriceOracle.address} ${args.join(" ")}`
+  )
 }
 
 func.id = "price-oracle"

@@ -17,14 +17,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const Registry = await deployments.get("MNSRegistry")
   const registry = new ethers.Contract(Registry.address, Registry.abi, deployer)
 
+  const args = [Registry.address]
+
   await deploy("Root", {
     from: deployer.address,
-    args: [Registry.address],
+    args,
     log: true,
   })
 
   const Root = await deployments.get("Root")
   const root = new ethers.Contract(Root.address, Root.abi, deployer)
+
+  console.log(
+    ` |> hh verify --contract contracts/root/Root.sol:Root --network ${
+      network.name
+    } ${Registry.address} ${args.join(" ")}`
+  )
 
   const tx1 = await registry.connect(owner).setOwner(ZERO_HASH, Root.address)
   console.log(

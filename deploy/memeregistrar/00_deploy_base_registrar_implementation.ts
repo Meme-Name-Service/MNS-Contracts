@@ -19,9 +19,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const Root = await deployments.get("Root")
   const root = new ethers.Contract(Root.address, Root.abi, deployer)
 
+  const args = [Registry.address, namehash.hash("meme")]
+
   const bri = await deploy("BaseRegistrarImplementation", {
     from: deployer.address,
-    args: [Registry.address, namehash.hash("meme")],
+    args,
     log: true,
   })
   if (!bri.newlyDeployed) return
@@ -31,6 +33,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Registrar.address,
     Registrar.abi,
     deployer
+  )
+
+  console.log(
+    ` |> hh verify --contract contracts/memeregistrar/BaseRegistrarImplementation.sol:BaseRegistrarImplementation --network ${
+      network.name
+    } ${Registry.address} ${args.join(" ")}`
   )
 
   const tx1 = await registrar.transferOwnership(owner.address)

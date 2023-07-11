@@ -7,18 +7,27 @@ const ZERO_HASH =
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log("starting")
-  const { deployments } = hre
+  const { deployments, network } = hre
   const { deploy } = deployments
   const [deployer, owner] = await ethers.getSigners()
 
+  const args = []
+
   await deploy("MNSRegistry", {
     from: deployer.address,
-    args: [],
+    args,
     log: true,
   })
 
   const Registry = await deployments.get("MNSRegistry")
   const registry = new ethers.Contract(Registry.address, Registry.abi, deployer)
+
+  console.log(
+    ` |> hh verify --contract contracts/registry/MNSRegistry.sol:MNSRegistry --network ${
+      network.name
+    } ${Registry.address} ${args.join(" ")}`
+  )
+
   const rootOwner = await registry.owner(ZERO_HASH)
   switch (rootOwner) {
     case deployer.address:
@@ -39,7 +48,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   return true
 }
 
-func.id = "mns"
+func.id = "registry"
 func.tags = ["registry", "MNSRegistry"]
 
 export default func

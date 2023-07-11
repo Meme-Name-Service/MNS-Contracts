@@ -3,23 +3,32 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments } = hre
+  const { deployments, network } = hre
   const { deploy } = deployments
   const [deployer, owner] = await ethers.getSigners()
 
   const Registry = await deployments.get("MNSRegistry")
   const registry = new ethers.Contract(Registry.address, Registry.abi, deployer)
 
+  const args = [Registry.address]
+
   const reverseRegistrar = await deploy("ReverseRegistrar", {
     from: deployer.address,
-    args: [Registry.address],
+    args,
     log: true,
   })
+
+  const ReverseRegistrar = await deployments.get("ReverseRegistrar")
+
+  console.log(
+    ` |> hh verify --contract contracts/registry/ReverseRegistrar.sol:ReverseRegistrar --network ${
+      network.name
+    } ${Registry.address} ${args.join(" ")}`
+  )
 
   if (!reverseRegistrar.newlyDeployed) return
 
   if (owner !== deployer) {
-    const ReverseRegistrar = await deployments.get("ReverseRegistrar")
     const r = new ethers.Contract(
       ReverseRegistrar.address,
       ReverseRegistrar.abi,
