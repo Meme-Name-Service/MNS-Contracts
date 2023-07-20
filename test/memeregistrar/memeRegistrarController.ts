@@ -229,4 +229,56 @@ describe("MemeRegistrarController", function () {
         balanceBefore
     ).to.equal(REGISTRATION_TIME)
   })
+
+  it("should permit a registration with resolver and have records", async () => {
+    const { otherAccount, controller, resolver, memens } = await loadFixture(
+      deployMemeRegistrarController
+    )
+
+    const commitment = await controller
+      .connect(otherAccount)
+      .makeCommitmentWithConfig(
+        "newconfigname2",
+        otherAccount.address,
+        secret,
+        await resolver.getAddress(),
+        otherAccount.address
+      )
+
+    await controller.connect(otherAccount).commit(commitment)
+    expect((await controller.commitments(commitment)).toString()).to.equal(
+      (await latest()).toString()
+    )
+
+    await increase(
+      BigNumber.from(+(await controller.minCommitmentAge()).toString() - 1)
+    )
+    const balanceBefore = await ethers.provider.getBalance(
+      await controller.getAddress()
+    )
+    await controller
+      .connect(otherAccount)
+      .registerWithConfig(
+        "newconfigname2",
+        otherAccount.address,
+        REGISTRATION_TIME,
+        secret,
+        await resolver.getAddress(),
+        otherAccount.address,
+        { value: BUFFERED_REGISTRATION_COST }
+      )
+
+    const nodehash = namehash.hash("newconfigname2.meme")
+    expect(await memens.resolver(nodehash)).to.equal(
+      await resolver.getAddress()
+    )
+    expect(await resolver["addr(bytes32)"](nodehash)).to.equal(
+      otherAccount.address
+    )
+    expect(
+      (await ethers.provider.getBalance(await controller.getAddress())) -
+        balanceBefore
+    ).to.equal(REGISTRATION_TIME)
+    // expect(await resolver.owner(nodehash)).to.equal(otherAccount.address)
+  })
 })
