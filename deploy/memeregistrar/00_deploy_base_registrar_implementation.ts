@@ -3,6 +3,12 @@ import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 import { keccak256 } from "js-sha3"
+import { sha3 } from "web3-utils"
+
+const toSha3 = (name: string): string => sha3(name) || ""
+
+const EMPTY_BYTES =
+  "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, network } = hre
@@ -15,9 +21,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const Registry = await deployments.get("MNSRegistry")
   const registry = new ethers.Contract(Registry.address, Registry.abi, deployer)
-
-  const Root = await deployments.get("Root")
-  const root = new ethers.Contract(Root.address, Root.abi, deployer)
 
   const args = [Registry.address, namehash.hash("meme")]
 
@@ -41,19 +44,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } ${Registry.address} ${args.join(" ")}`
   )
 
-  const tx1 = await registrar.transferOwnership(owner.address)
-  console.log(
-    `Transferring ownership of registrar to owner (tx: ${tx1.hash})...`
-  )
-  await tx1.wait()
-
-  const tx2 = await root
-    .connect(owner)
-    .setSubnodeOwner("0x" + keccak256("meme"), Registrar.address)
-  console.log(
-    `Setting owner of meme node to registrar on root (tx: ${tx2.hash})...`
-  )
-  await tx2.wait()
+  // const tx1 = await registrar.transferOwnership(owner.address)
+  // console.log(
+  //   `Transferring ownership of registrar to owner (tx: ${tx1.hash})...`
+  // )
+  // await tx1.wait()
 }
 
 func.id = "registrar"

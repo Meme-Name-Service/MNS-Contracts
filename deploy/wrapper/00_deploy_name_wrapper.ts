@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const nameWrapper = await deploy("NameWrapper", {
     from: deployer.address,
-    args: [Registry.address, Registrar.address, owner.address],
+    args: [Registry.address, Registrar.address, deployer.address],
     log: true,
   })
 
@@ -28,18 +28,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const Wrapper = await deployments.get("NameWrapper")
   const wrapper = new ethers.Contract(Wrapper.address, Wrapper.abi, deployer)
 
-  if (owner !== deployer) {
-    const tx = await wrapper.transferOwnership(owner.address)
-    console.log(
-      `Transferring ownership of NameWrapper to ${owner.address} (tx: ${tx.hash})...`
-    )
-    await tx.wait()
-  }
+  // if (owner !== deployer) {
+  //   const tx = await wrapper.transferOwnership(owner.address)
+  //   console.log(
+  //     `Transferring ownership of NameWrapper to ${owner.address} (tx: ${tx.hash})...`
+  //   )
+  //   await tx.wait()
+  // }
 
-  // Only attempt to make controller etc changes directly on testnets
-  if (network.name === "mainnet") return
+  // // Only attempt to make controller etc changes directly on testnets
+  // if (network.name === "mainnet") return
 
-  const tx2 = await registrar.connect(owner).addController(Wrapper.address)
+  const tx2 = await registrar.connect(deployer).addController(Wrapper.address)
   console.log(
     `Adding NameWrapper as controller on registrar (tx: ${tx2.hash})...`
   )

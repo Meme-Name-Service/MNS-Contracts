@@ -9,7 +9,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log("starting")
   const { deployments, network } = hre
   const { deploy } = deployments
-  const [deployer, owner] = await ethers.getSigners()
+  const [deployer] = await ethers.getSigners()
 
   const args = []
 
@@ -28,22 +28,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } ${Registry.address} ${args.join(" ")}`
   )
 
-  const rootOwner = await registry.owner(ZERO_HASH)
-  switch (rootOwner) {
-    case deployer.address:
-      const tx = await registry.setOwner(ZERO_HASH, owner, { from: deployer })
-      console.log(
-        `Setting final owner of root node on registry (tx:${tx.hash})...`
-      )
-      await tx.wait()
-      break
-    case owner.address:
-      break
-    default:
-      console.log(
-        `WARNING: MNS registry root is owned by ${rootOwner}; cannot transfer to owner`
-      )
-  }
+  // const rootOwner = await registry.owner(ZERO_HASH)
+  // switch (rootOwner) {
+  //   case deployer.address:
+  //     const tx = await registry.setOwner(ZERO_HASH, owner.address, {
+  //       from: deployer,
+  //     })
+  //     console.log(
+  //       `Setting final owner of root node on registry (tx:${tx.hash})...`
+  //     )
+  //     await tx.wait()
+  //     break
+  //   case owner.address:
+  //     break
+  //   default:
+  //     console.log(
+  //       `WARNING: MNS registry root is owned by ${rootOwner}; cannot transfer to owner`
+  //     )
+  // }
 
   return true
 }

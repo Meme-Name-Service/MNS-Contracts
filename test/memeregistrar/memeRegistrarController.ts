@@ -96,12 +96,8 @@ describe("MemeRegistrarController", function () {
       toSha3("meme"),
       await registrar.getAddress()
     )
+
     await registrar.addController(controller)
-    await memens.setSubnodeOwner(
-      ZERO_HASH,
-      toSha3("meme"),
-      await registrar.getAddress()
-    )
     await nameWrapper.setController(await controller.getAddress(), true)
     await registrar.addController(await nameWrapper.getAddress())
     await reverseRegistrar.setController(await controller.getAddress(), true)
@@ -256,6 +252,7 @@ describe("MemeRegistrarController", function () {
     const balanceBefore = await ethers.provider.getBalance(
       await controller.getAddress()
     )
+
     await controller
       .connect(otherAccount)
       .registerWithConfig(

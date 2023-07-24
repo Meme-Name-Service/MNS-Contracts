@@ -4,7 +4,11 @@ import "hardhat-deploy"
 import "hardhat-gas-reporter"
 
 const tempAccounts = process.env.DEPLOYER_PRIVATE_KEY
-  ? [process.env.DEPLOYER_PRIVATE_KEY, process.env.OWNER_PRIVATE_KEY]
+  ? [
+      process.env.DEPLOYER_PRIVATE_KEY,
+      process.env.OWNER_PRIVATE_KEY,
+      process.env.TESTER_PRIVATE_KEY,
+    ]
   : []
 
 const accounts: string[] = tempAccounts.filter(

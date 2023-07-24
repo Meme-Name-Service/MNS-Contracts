@@ -19,50 +19,50 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const args = [Registry.address]
 
-  await deploy("Root", {
-    from: deployer.address,
-    args,
-    log: true,
-  })
+  // await deploy("Root", {
+  //   from: deployer.address,
+  //   args,
+  //   log: true,
+  // })
 
-  const Root = await deployments.get("Root")
-  const root = new ethers.Contract(Root.address, Root.abi, deployer)
+  // const Root = await deployments.get("Root")
+  // const root = new ethers.Contract(Root.address, Root.abi, deployer)
 
-  console.log(
-    ` |> hh verify --contract contracts/root/Root.sol:Root --network ${
-      network.name
-    } ${Registry.address} ${args.join(" ")}`
-  )
+  // console.log(
+  //   ` |> hh verify --contract contracts/root/Root.sol:Root --network ${
+  //     network.name
+  //   } ${Registry.address} ${args.join(" ")}`
+  // )
 
-  const tx1 = await registry.connect(owner).setOwner(ZERO_HASH, Root.address)
-  console.log(
-    `Setting owner of root node to root contract (tx: ${tx1.hash})...`
-  )
-  await tx1.wait()
+  // const tx1 = await registry.connect(owner).setOwner(ZERO_HASH, Root.address)
+  // console.log(
+  //   `Setting owner of root node to root contract (tx: ${tx1.hash})...`
+  // )
+  // await tx1.wait()
 
-  const rootOwner = await root.owner()
+  // const rootOwner = await root.owner()
 
-  switch (rootOwner) {
-    case deployer.address:
-      const tx2 = await root.connect(deployer).transferOwnership(owner.address)
-      console.log(
-        `Transferring root ownership to final owner (tx: ${tx2.hash})...`
-      )
-      await tx2.wait()
-    case owner.address:
-      if (!(await root.controllers(owner))) {
-        const tx2 = await root.connect(owner).setController(owner.address, true)
-        console.log(
-          `Setting final owner as controller on root contract (tx: ${tx2.hash})...`
-        )
-        await tx2.wait()
-      }
-      break
-    default:
-      console.log(
-        `WARNING: Root is owned by ${rootOwner}; cannot transfer to owner account`
-      )
-  }
+  // switch (rootOwner) {
+  //   case deployer.address:
+  //     const tx2 = await root.connect(deployer).transferOwnership(owner.address)
+  //     console.log(
+  //       `Transferring root ownership to final owner (tx: ${tx2.hash})...`
+  //     )
+  //     await tx2.wait()
+  //   case owner.address:
+  //     if (!(await root.controllers(owner))) {
+  //       const tx2 = await root.connect(owner).setController(owner.address, true)
+  //       console.log(
+  //         `Setting final owner as controller on root contract (tx: ${tx2.hash})...`
+  //       )
+  //       await tx2.wait()
+  //     }
+  //     break
+  //   default:
+  //     console.log(
+  //       `WARNING: Root is owned by ${rootOwner}; cannot transfer to owner account`
+  //     )
+  // }
 
   return true
 }

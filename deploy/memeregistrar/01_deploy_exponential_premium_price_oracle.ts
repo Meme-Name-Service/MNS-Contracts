@@ -13,7 +13,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   let oracleAddress: any = priceFeed[network.name]
-  let args = ["23319000000"]
+  let args = ["100000000"]
   if (network.name !== "bscMainnet") {
     await deploy("DummyOracle", {
       from: deployer.address,
@@ -32,10 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     oracleAddress = DummyOracle.address
   }
 
-  args = [
-    oracleAddress,
-    [0, 0, "20294266869609", "5073566717402", "158548959919"],
-  ]
+  args = [oracleAddress, [0, 0, 4, 2, 1]]
 
   await deploy("StablePriceOracle", {
     from: deployer.address,

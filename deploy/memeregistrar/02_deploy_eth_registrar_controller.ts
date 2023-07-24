@@ -1,17 +1,27 @@
 import { ethers } from "hardhat"
 import { DeployFunction } from "hardhat-deploy/types"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
+import { keccak256, sha3 } from "web3-utils"
+import namehash from "eth-ens-namehash"
+
+const toSha3 = (name: string): string => sha3(name) || ""
+const EMPTY_BYTES =
+  "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, network } = hre
   const { deploy } = deployments
-  const [deployer, owner] = await ethers.getSigners()
+  const [deployer] = await ethers.getSigners()
 
   const Registry = await deployments.get("MNSRegistry")
-  const registry = new ethers.Contract(Registry.address, Registry.abi, owner)
+  const registry = new ethers.Contract(Registry.address, Registry.abi, deployer)
 
   const Registrar = await deployments.get("BaseRegistrarImplementation")
-  const registrar = new ethers.Contract(Registrar.address, Registrar.abi, owner)
+  const registrar = new ethers.Contract(
+    Registrar.address,
+    Registrar.abi,
+    deployer
+  )
 
   const PriceOracle = await deployments.get("StablePriceOracle")
   const priceOracle = new ethers.Contract(
@@ -24,14 +34,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const reverseRegistrar = new ethers.Contract(
     ReverseRegistrar.address,
     ReverseRegistrar.abi,
-    owner
+    deployer
   )
 
   const NameWrapper = await deployments.get("NameWrapper")
   const nameWrapper = new ethers.Contract(
     NameWrapper.address,
     NameWrapper.abi,
-    owner
+    deployer
   )
 
   let args = [Registrar.address, PriceOracle.address, 60, 86400]
@@ -65,7 +75,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   if (network.name === "mainnet") return
 
   const tx1 = await nameWrapper
-    .connect(owner)
+    .connect(deployer)
     .setController(Controller.address, true)
   console.log(
     `Adding ETHRegistrarController as a controller of NameWrapper (tx: ${tx1.hash})...`
@@ -73,25 +83,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await tx1.wait()
 
   const tx2 = await reverseRegistrar
-    .connect(owner)
+    .connect(deployer)
     .setController(Controller.address, true)
   console.log(
     `Adding ETHRegistrarController as a controller of ReverseRegistrar (tx: ${tx2.hash})...`
   )
   await tx2.wait()
 
-  if (owner !== deployer) {
-    const c = new ethers.Contract(
-      MEMERegistrarController.address,
-      MEMERegistrarController.abi,
-      deployer
-    )
-    const tx = await c.transferOwnership(owner.address)
-    console.log(
-      `Transferring ownership of ETHRegistrarController to ${owner.address} (tx: ${tx.hash})...`
-    )
-    await tx.wait()
-  }
+  // if (deployer !== deployer) {
+  //   const c = new ethers.Contract(
+  //     MEMERegistrarController.address,
+  //     MEMERegistrarController.abi,
+  //     deployer
+  //   )
+  //   const tx = await c.transferOwnership(deployer.address)
+  //   console.log(
+  //     `Transferring ownership of ETHRegistrarController to ${deployer.address} (tx: ${tx.hash})...`
+  //   )
+  //   await tx.wait()
+  // }
 
   args = [
     Registry.address,
@@ -119,15 +129,33 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     } ${PublicResolver.address} ${args.join(" ")}`
   )
 
-  // const tx3 = await resolverContract.setInterface(
-  //   ethers.utils.namehash("eth"),
-  //   interfaceId,
-  //   controller.address
-  // )
-  // console.log(
-  //   `Setting ETHRegistrarController interface ID ${interfaceId} on .eth resolver (tx: ${tx3.hash})...`
-  // )
-  // await tx3.wait()
+  const tx3 = await registrar
+    .connect(deployer)
+    .addController(Controller.address)
+  console.log(`Set Controller from registrar (tx: ${tx3.hash})...`)
+  await tx3.wait()
+
+  const tx5 = await registry
+    .connect(deployer)
+    .setSubnodeOwner(EMPTY_BYTES, toSha3("reverse"), deployer.address)
+  console.log(`Set subnode with 0x and reverse (tx: ${tx5.hash})...`)
+  await tx5.wait()
+
+  const tx4 = await registry
+    .connect(deployer)
+    .setSubnodeOwner(
+      namehash.hash("reverse"),
+      toSha3("addr"),
+      ReverseRegistrar.address
+    )
+  console.log(`Set subnode with 0x and meme (tx: ${tx4.hash})...`)
+  await tx4.wait()
+
+  const tx6 = await registry
+    .connect(deployer)
+    .setSubnodeOwner(EMPTY_BYTES, toSha3("meme"), Registrar.address)
+  console.log(`Set subnode with 0x and meme (tx: ${tx6.hash})...`)
+  await tx6.wait()
 }
 
 func.tags = ["ethregistrar", "ETHRegistrarController"]
