@@ -34,79 +34,91 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     owner
   )
 
-  const args = [Registrar.address, PriceOracle.address, 60, 86400]
+  let args = [Registrar.address, PriceOracle.address, 60, 86400]
 
-  const controller = await deploy("MEMERegistrarController", {
+  await deploy("MEMERegistrarController", {
     from: deployer.address,
     args,
     log: true,
   })
 
+  const Controller = await deployments.get("MEMERegistrarController")
+  const controller = new ethers.Contract(
+    Controller.address,
+    Controller.abi,
+    deployer
+  )
+
   console.log(
     ` |> hh verify --contract contracts/memeregistrar/MEMERegistrarController.sol:MEMERegistrarController --network ${
       network.name
-    } ${controller.address} ${args.join(" ")}`
+    } ${Controller.address} ${args.join(" ")}`
   )
 
-  if (!controller.newlyDeployed) return
+  // if (!controller.newlyDeployed) return
+
+  const MEMERegistrarController = await deployments.get(
+    "MEMERegistrarController"
+  )
+
+  // Only attempt to make controller etc changes directly on testnets
+  if (network.name === "mainnet") return
+
+  const tx1 = await nameWrapper
+    .connect(owner)
+    .setController(Controller.address, true)
+  console.log(
+    `Adding ETHRegistrarController as a controller of NameWrapper (tx: ${tx1.hash})...`
+  )
+  await tx1.wait()
+
+  const tx2 = await reverseRegistrar
+    .connect(owner)
+    .setController(Controller.address, true)
+  console.log(
+    `Adding ETHRegistrarController as a controller of ReverseRegistrar (tx: ${tx2.hash})...`
+  )
+  await tx2.wait()
 
   if (owner !== deployer) {
-    const MEMERegistrarController = await deployments.get(
-      "MEMERegistrarController"
-    )
     const c = new ethers.Contract(
       MEMERegistrarController.address,
       MEMERegistrarController.abi,
       deployer
     )
-    const tx = await c.transferOwnership(owner)
+    const tx = await c.transferOwnership(owner.address)
     console.log(
       `Transferring ownership of ETHRegistrarController to ${owner.address} (tx: ${tx.hash})...`
     )
     await tx.wait()
   }
 
-  // Only attempt to make controller etc changes directly on testnets
-  if (network.name === "mainnet") return
+  args = [
+    Registry.address,
+    NameWrapper.address,
+    MEMERegistrarController.address,
+    ReverseRegistrar.address,
+  ]
 
-  // console.log(
-  //   "WRAPPER OWNER",
-  //   await nameWrapper.owner(),
-  //   await nameWrapper.signer.getAddress()
-  // )
-  // const tx1 = await nameWrapper.setController(controller.address, true)
-  // console.log(
-  //   `Adding ETHRegistrarController as a controller of NameWrapper (tx: ${tx1.hash})...`
-  // )
-  // await tx1.wait()
+  await deploy("PublicResolver", {
+    from: deployer.address,
+    args,
+    log: true,
+  })
 
-  // const tx2 = await reverseRegistrar.setController(controller.address, true)
-  // console.log(
-  //   `Adding ETHRegistrarController as a controller of ReverseRegistrar (tx: ${tx2.hash})...`
-  // )
-  // await tx2.wait()
+  const PublicResolver = await deployments.get("PublicResolver")
+  const resolverContract = new ethers.Contract(
+    PublicResolver.address,
+    PublicResolver.abi,
+    deployer
+  )
 
-  // const artifact = await deployments.getArtifact("IETHRegistrarController")
-  // const interfaceId = computeInterfaceId(new Interface(artifact.abi))
-  // const provider = new ethers.providers.StaticJsonRpcProvider(
-  //   ethers.provider.connection.url,
-  //   {
-  //     ...ethers.provider.network,
-  //     ensAddress: (await ethers.getContract("ENSRegistry")).address,
-  //   }
-  // )
-  // const resolver = await provider.getResolver("eth")
-  // if (resolver === null) {
-  //   registrar.setResolver(ethOwnedResolver.address)
-  //   console.log(
-  //     `No resolver set for .eth; not setting interface ${interfaceId} for ETH Registrar Controller`
-  //   )
-  //   return
-  // }
-  // const resolverContract = await ethers.getContractAt(
-  //   "PublicResolver",
-  //   resolver.address
-  // )
+  console.log(
+    ` |> hh verify --contract contracts/resolvers/PublicResolver.sol:PublicResolver --network ${
+      network.name
+    } ${PublicResolver.address} ${args.join(" ")}`
+  )
+
   // const tx3 = await resolverContract.setInterface(
   //   ethers.utils.namehash("eth"),
   //   interfaceId,
