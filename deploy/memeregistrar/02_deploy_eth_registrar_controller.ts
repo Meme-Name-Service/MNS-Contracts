@@ -44,7 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer
   )
 
-  let args = [Registrar.address, PriceOracle.address, 60, 86400]
+  let args = [Registrar.address, PriceOracle.address, 2, 86400]
 
   await deploy("MEMERegistrarController", {
     from: deployer.address,

@@ -38,6 +38,8 @@ contract MEMERegistrarController is Ownable {
     uint public maxCommitmentAge;
 
     mapping(bytes32 => uint) public commitments;
+    mapping(uint256 => string) public tokenIdToName;
+    mapping(string => uint256) public nameToTokenId;
 
     event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint cost, uint expires);
     event NameRenewed(string name, bytes32 indexed label, uint cost, uint expires);
@@ -59,6 +61,11 @@ contract MEMERegistrarController is Ownable {
     function rentPrice(string memory name, uint256 duration) public view returns (IPriceOracle.Price memory price) {
         bytes32 label = keccak256(bytes(name));
         price = prices.price(name, base.nameExpires(uint256(label)), duration);
+    }
+
+    function nameExpireTimestamp(string memory name) public view returns (uint) {
+        bytes32 label = keccak256(bytes(name));
+        return base.nameExpires(uint256(label));
     }
 
     function valid(string memory name) public pure returns (bool) {
@@ -162,6 +169,8 @@ contract MEMERegistrarController is Ownable {
         }
 
         emit NameRegistered(name, label, owner, cost, expires);
+        tokenIdToName[tokenId] = name;
+        nameToTokenId[name] = tokenId;
 
         // Refund any extra payment
         if (msg.value > cost) {

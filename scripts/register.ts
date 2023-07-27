@@ -2,7 +2,12 @@ import { ethers, deployments } from "hardhat"
 import { sha3 } from "web3-utils"
 import namehash from "eth-ens-namehash"
 import { BigNumber } from "@ethersproject/bignumber"
-import { MEMERegistrarController__factory } from "../typechain-types"
+import {
+  MEMERegistrarController__factory,
+  MNSRegistry__factory,
+  Resolver__factory,
+  BaseRegistrarImplementation__factory,
+} from "../typechain-types"
 import crypto from "crypto"
 
 const DAY = 24 * 60 * 60
@@ -23,12 +28,24 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms))
 async function main() {
   const deployer = (await ethers.getSigners())[2]
   const Controller = await deployments.get("MEMERegistrarController")
+  const BaseRegistrarImplementation = await deployments.get(
+    "BaseRegistrarImplementation"
+  )
+  const Memens = await deployments.get("MNSRegistry")
   const Resolver = await deployments.get("PublicResolver")
+
+  const memens = MNSRegistry__factory.connect(Memens.address, deployer)
   const controller = MEMERegistrarController__factory.connect(
     Controller.address,
     deployer
   )
-  const registerName = "memename2"
+  const resolver = Resolver__factory.connect(Resolver.address, deployer)
+  const baseRegistrar = BaseRegistrarImplementation__factory.connect(
+    BaseRegistrarImplementation.address,
+    deployer
+  )
+
+  const registerName = "memename1"
 
   const secret = generateRandom32Byte()
 
@@ -36,28 +53,32 @@ async function main() {
     await controller.rentPrice(registerName, REGISTRATION_TIME)
   )[0].toString()
 
-  const commitment = await controller.makeCommitment(
+  const commitment = await controller.makeCommitmentWithConfig(
     registerName,
     deployer.address,
-    secret
+    secret,
+    Resolver.address,
+    deployer.address
   )
 
-  const tx = await controller.commit(commitment, { gasLimit: 250000 })
+  const tx = await controller.commit(commitment)
 
   console.log(`Commitment made tx sent: ${tx.hash}`)
 
-  await delay(100000)
+  await delay(5000)
 
   const bufferPrice = BigNumber.from(price).add(
     BigNumber.from(ethers.parseEther("0.01").toString())
   )
 
-  const buyTx = await controller.register(
+  const buyTx = await controller.registerWithConfig(
     registerName,
     deployer.address,
     REGISTRATION_TIME,
     secret,
-    { value: price.toString(), gasLimit: 250000 }
+    Resolver.address,
+    deployer.address,
+    { value: price.toString() }
   )
 
   await buyTx.wait()
@@ -65,6 +86,18 @@ async function main() {
   console.log(`Buy tx sent: ${buyTx.hash}`)
 
   console.log(commitment.toString())
+
+  const nodehash = namehash.hash(`${registerName}.meme`)
+  console.log(await memens.resolver(nodehash))
+  console.log("Resolver address ", await resolver["addr(bytes32)"](nodehash))
+
+  const tokenId = await controller.nameToTokenId(registerName)
+  const name = await controller.tokenIdToName(tokenId)
+  const expireDate = await controller.nameExpireTimestamp(name)
+
+  console.log("Token ID ", tokenId.toString())
+  console.log("Name ", name.toString())
+  console.log("Expire Date ", expireDate.toString())
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -15,9 +15,9 @@ npx hardhat run scripts/deploy.ts
 BSC Testnet Contract
 
 ```
-MEMERegistrarController = 0x4861487Ae3198d97f40aa9A52C569561f01da7A8
-BaseRegistrarImplementation = 0xb0907De66a7f5582c9fa8e64C44dC25F3e0CEA4c
-PublicResolver = 0xFdE31Bd4Bf4A896826bE33C20D3c385FaA5FB6c5
+MEMERegistrarController = 0x6d53339FbA3c1d323dEcD98bbEF0569C6F5682f3
+BaseRegistrarImplementation = 0xD53458326b62CA6A5014cEDFCdcad29cDb0C81dD
+PublicResolver = 0x8859b532EE2A0Aa62b006d2f40bF38fEE702f621
 ```
 
 Integration Flow

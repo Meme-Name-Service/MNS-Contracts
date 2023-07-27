@@ -41,7 +41,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(
     ` |> hh verify --contract contracts/memeregistrar/BaseRegistrarImplementation.sol:BaseRegistrarImplementation --network ${
       network.name
-    } ${Registry.address} ${args.join(" ")}`
+    } ${Registrar.address} ${args.join(" ")}`
   )
 
   // const tx1 = await registrar.transferOwnership(owner.address)
